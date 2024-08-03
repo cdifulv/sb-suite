@@ -1,4 +1,7 @@
 import { Suspense } from 'react';
+import { db } from '@/db';
+import { orders } from '@/db/schema';
+import { sql } from 'drizzle-orm';
 import Stripe from 'stripe';
 
 import { Badge } from '@/components/ui/badge';
@@ -22,30 +25,28 @@ const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 const endOfCurrentMonth = new Date(startOfNextMonth);
 endOfCurrentMonth.setDate(endOfCurrentMonth.getDate() - 1);
 
-async function getGrossRevenue(stripe: Stripe) {
+async function getGrossRevenue() {
   try {
-    const charges = await stripe.charges.list({
-      created: {
-        gte: Math.floor(startOfCurrentMonth.getTime() / 1000),
-        lte: Math.floor(endOfCurrentMonth.getTime() / 1000)
-      },
-      limit: 100
-    });
+    const currOrders = await db
+      .select()
+      .from(orders)
+      .where(
+        sql`${orders.paymentStatus} = 'paid' AND ${orders.paymentDate} >= ${startOfCurrentMonth.toISOString()} AND ${orders.paymentDate} <= ${endOfCurrentMonth.toISOString()}`
+      );
 
-    const prevCharges = await stripe.charges.list({
-      created: {
-        gte: Math.floor(startOfPreviousMonth.getTime() / 1000),
-        lte: Math.floor(endOfPreviousMonth.getTime() / 1000)
-      },
-      limit: 100
-    });
+    const prevOrders = await db
+      .select()
+      .from(orders)
+      .where(
+        sql`${orders.paymentStatus} = 'paid' AND ${orders.paymentDate} >= ${startOfPreviousMonth.toISOString()} AND ${orders.paymentDate} <= ${endOfPreviousMonth.toISOString()}`
+      );
 
-    const totalRevenue = charges.data.reduce(
-      (sum, charge) => sum + charge.amount,
+    const totalRevenue = currOrders.reduce(
+      (sum, order) => sum + order.total,
       0
     );
-    const prevTotalRevenue = prevCharges.data.reduce(
-      (sum, charge) => sum + charge.amount,
+    const prevTotalRevenue = prevOrders.reduce(
+      (sum, order) => sum + order.total,
       0
     );
 
@@ -139,15 +140,17 @@ async function getNewInvoices(stripe: Stripe) {
 }
 
 export async function DashboardCards() {
-  const stripe = process.env.STRIPE_SECRET
-    ? new Stripe(process.env.STRIPE_SECRET)
-    : null;
+  const stripe = new Stripe(process.env.STRIPE_SECRET!);
 
   if (!stripe) return null;
 
-  const grossRevenue = await getGrossRevenue(stripe);
+  const grossRevenue = await getGrossRevenue();
   const customers = await getNewCustomers(stripe);
   const invoices = await getNewInvoices(stripe);
+  const pendingOrders = await db
+    .select()
+    .from(orders)
+    .where(sql`${orders.orderStatus} = 'pending'`);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -250,7 +253,7 @@ export async function DashboardCards() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{pendingOrders.length}</div>
           </CardContent>
         </Card>
       </Suspense>
