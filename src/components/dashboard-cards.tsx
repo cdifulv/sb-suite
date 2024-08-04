@@ -1,45 +1,29 @@
 import { Suspense } from 'react';
-import { db } from '@/db';
-import { orders } from '@/db/schema';
-import { sql } from 'drizzle-orm';
+import { getOrderPaymentsBetweenDates, getPendingOrders } from '@/db/queries';
+import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import Stripe from 'stripe';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
-
-import { SkeletonCard } from './skeleton-card';
+import { SkeletonCard } from '@/components/skeleton-card';
 
 const now = new Date();
-
-const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-const startOfPreviousMonth = new Date(startOfCurrentMonth);
-startOfPreviousMonth.setMonth(startOfPreviousMonth.getMonth() - 1);
-
-const endOfPreviousMonth = new Date(startOfPreviousMonth);
-endOfPreviousMonth.setMonth(endOfPreviousMonth.getMonth() + 1);
-endOfPreviousMonth.setDate(0);
-
-const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-const endOfCurrentMonth = new Date(startOfNextMonth);
-endOfCurrentMonth.setDate(endOfCurrentMonth.getDate() - 1);
+const firstDayOfMonth = startOfMonth(now);
+const lastDatyOfMonth = endOfMonth(now);
+const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
+const endOfPreviousMonth = endOfMonth(subMonths(now, 1));
 
 async function getGrossRevenue() {
   try {
-    const currOrders = await db
-      .select()
-      .from(orders)
-      .where(
-        sql`${orders.paymentStatus} = 'paid' AND ${orders.paymentDate} >= ${startOfCurrentMonth.toISOString()} AND ${orders.paymentDate} <= ${endOfCurrentMonth.toISOString()}`
-      );
-
-    const prevOrders = await db
-      .select()
-      .from(orders)
-      .where(
-        sql`${orders.paymentStatus} = 'paid' AND ${orders.paymentDate} >= ${startOfPreviousMonth.toISOString()} AND ${orders.paymentDate} <= ${endOfPreviousMonth.toISOString()}`
-      );
+    const currOrders = await getOrderPaymentsBetweenDates(
+      firstDayOfMonth,
+      lastDatyOfMonth
+    );
+    const prevOrders = await getOrderPaymentsBetweenDates(
+      startOfPreviousMonth,
+      endOfPreviousMonth
+    );
 
     const totalRevenue = currOrders.reduce(
       (sum, order) => sum + order.total,
@@ -68,8 +52,8 @@ async function getNewCustomers(stripe: Stripe) {
   try {
     const newCustomers = await stripe.customers.list({
       created: {
-        gte: Math.floor(startOfCurrentMonth.getTime() / 1000),
-        lte: Math.floor(endOfCurrentMonth.getTime() / 1000)
+        gte: Math.floor(firstDayOfMonth.getTime() / 1000),
+        lte: Math.floor(lastDatyOfMonth.getTime() / 1000)
       },
       limit: 100
     });
@@ -102,8 +86,8 @@ async function getNewInvoices(stripe: Stripe) {
   try {
     const invoices = await stripe.invoices.list({
       created: {
-        gte: Math.floor(startOfCurrentMonth.getTime() / 1000),
-        lte: Math.floor(endOfCurrentMonth.getTime() / 1000)
+        gte: Math.floor(firstDayOfMonth.getTime() / 1000),
+        lte: Math.floor(lastDatyOfMonth.getTime() / 1000)
       },
       limit: 100
     });
@@ -141,16 +125,12 @@ async function getNewInvoices(stripe: Stripe) {
 
 export async function DashboardCards() {
   const stripe = new Stripe(process.env.STRIPE_SECRET!);
-
   if (!stripe) return null;
 
   const grossRevenue = await getGrossRevenue();
   const customers = await getNewCustomers(stripe);
   const invoices = await getNewInvoices(stripe);
-  const pendingOrders = await db
-    .select()
-    .from(orders)
-    .where(sql`${orders.orderStatus} = 'pending'`);
+  const pendingOrders = await getPendingOrders();
 
   return (
     <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">

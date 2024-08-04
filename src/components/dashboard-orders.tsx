@@ -1,6 +1,5 @@
-import { db } from '@/db';
-import { orders } from '@/db/schema';
-import { asc, sql } from 'drizzle-orm';
+import { getPendingOrders } from '@/db/queries';
+import { format } from 'date-fns';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,18 +11,14 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { OrderActionsDialog } from '@/components/orders-action-dialog';
+import { OrderActionDialog } from '@/components/orders-action-dialog';
 
 function capitalizeFirstLetter(string: string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 export async function DashboardOrders() {
-  const dbOrders = await db
-    .select()
-    .from(orders)
-    .where(sql`${orders.orderStatus} = 'pending'`)
-    .orderBy(asc(orders.dueDate));
+  const orders = await getPendingOrders();
 
   return (
     <Card className="xl:col-span-2" x-chunk="dashboard-01-chunk-5">
@@ -44,7 +39,7 @@ export async function DashboardOrders() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dbOrders.map((order, index) => (
+            {orders.map((order, index) => (
               <TableRow key={index}>
                 <TableCell>
                   <div className="font-medium">{order.customerName}</div>
@@ -66,18 +61,17 @@ export async function DashboardOrders() {
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
                   {order.dueDate
-                    ? new Date(order.dueDate).toLocaleDateString('en-US', {
-                        month: '2-digit',
-                        day: '2-digit',
-                        year: 'numeric'
-                      })
+                    ? format(new Date(order.dueDate), 'MMM dd, yyyy')
                     : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
                   ${(order.total / 100).toFixed(2)}
                 </TableCell>
                 <TableCell className="w-10">
-                  <OrderActionsDialog />
+                  <OrderActionDialog
+                    orderId={order.id}
+                    orderDueDate={order.dueDate}
+                  />
                 </TableCell>
               </TableRow>
             ))}
