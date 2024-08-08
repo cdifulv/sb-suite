@@ -1,20 +1,17 @@
 import { revalidateTag } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
-import { updateOrder } from '@/db/actions';
+import { createOrder } from '@/db/actions';
 
-import { type UpdateOrder } from '@/types/order';
-import { updateOrderSchema } from '@/lib/zodSchemas';
+import { CreateOrder } from '@/types/order';
+import { createOrderFormSchema } from '@/lib/zodSchemas';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest) {
   const tags = request.nextUrl.searchParams.get('tags');
   try {
-    const orderId = Number(params.id);
-    const body = (await request.json()) as UpdateOrder;
-    const parsedBody = updateOrderSchema.safeParse(body);
+    const body = (await request.json()) as CreateOrder;
+    const parsedBody = createOrderFormSchema.safeParse(body);
     if (!parsedBody.success) {
+      console.log(parsedBody.error.flatten().fieldErrors);
       return NextResponse.json(
         {
           message: 'Invalid form data',
@@ -24,8 +21,7 @@ export async function PATCH(
       );
     }
 
-    await updateOrder(orderId, parsedBody.data);
-
+    await createOrder(parsedBody.data);
     if (tags && tags.length > 0) {
       for (const tag of tags.split(',')) {
         revalidateTag(tag);
@@ -34,7 +30,7 @@ export async function PATCH(
 
     return NextResponse.json({
       status: 'success',
-      message: 'Due date set successfully'
+      message: 'Order created successfully'
     });
   } catch (error: unknown) {
     console.error(error);

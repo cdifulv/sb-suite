@@ -8,6 +8,10 @@ export const siteConfig = {
     {
       title: 'Dashboard',
       href: '/'
+    },
+    {
+      title: 'Orders',
+      href: '/orders'
     }
   ],
   links: {

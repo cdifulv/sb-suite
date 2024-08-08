@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateOrder } from '@/db/actions';
+import { deleteOrder, updateOrder } from '@/db/actions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon, MoreVertical } from 'lucide-react';
@@ -27,6 +27,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
@@ -46,11 +47,15 @@ import { toast } from '@/components/ui/use-toast';
 interface OrderActionDialogProps {
   orderId: number;
   orderDueDate?: Date | null;
+  orderStatus: string;
+  stripeInvoiceId?: string | null;
 }
 
 export function OrderActionDialog({
   orderId,
-  orderDueDate
+  orderDueDate,
+  orderStatus,
+  stripeInvoiceId
 }: OrderActionDialogProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +66,6 @@ export function OrderActionDialog({
       dueDate: orderDueDate ?? undefined
     }
   });
-  const formRef = useRef<HTMLFormElement>(null);
 
   async function onSubmit() {
     setIsSubmitting(true);
@@ -117,7 +121,7 @@ export function OrderActionDialog({
         <DropdownMenuTrigger asChild>
           <Button size="icon" variant="outline" className="h-8 w-8">
             <MoreVertical className="h-3.5 w-3.5" />
-            <span className="sr-only">More</span>
+            <span className="sr-only">Actions</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -128,13 +132,32 @@ export function OrderActionDialog({
           </DialogTrigger>
           <form
             action={async () => {
-              await updateOrder(orderId, { status: 'complete' });
+              const status = orderStatus === 'pending' ? 'complete' : 'pending';
+              await updateOrder(orderId, { status });
             }}
           >
             <button type="submit" className="block w-full">
-              <DropdownMenuItem className="w-full">Complete</DropdownMenuItem>
+              <DropdownMenuItem className="w-full">
+                {orderStatus === 'pending' ? 'Complete' : 'Undo Complete'}
+              </DropdownMenuItem>
             </button>
           </form>
+          {!stripeInvoiceId && orderStatus !== 'complete' && (
+            <>
+              <DropdownMenuSeparator />
+              <form
+                action={async () => {
+                  await deleteOrder(orderId);
+                }}
+              >
+                <button type="submit" className="block w-full">
+                  <DropdownMenuItem className="w-full">
+                    Delete Order
+                  </DropdownMenuItem>
+                </button>
+              </form>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <DialogContent>
@@ -147,7 +170,6 @@ export function OrderActionDialog({
 
         <Form {...form}>
           <form
-            ref={formRef}
             id="dueDateForm"
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-8"

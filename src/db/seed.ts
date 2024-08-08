@@ -30,9 +30,9 @@ const main = async () => {
     const charges = await stripe.charges.list({
       limit: 100
     });
-    const validCharges = charges.data.filter(
-      (charge) => charge.status === 'succeeded'
-    );
+    const validCharges = charges.data
+      .filter((charge) => charge.status === 'succeeded')
+      .sort((a, b) => b.created - a.created);
 
     type Order = typeof orders.$inferInsert;
 

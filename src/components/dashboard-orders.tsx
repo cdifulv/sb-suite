@@ -71,6 +71,7 @@ export async function DashboardOrders() {
                   <OrderActionDialog
                     orderId={order.id}
                     orderDueDate={order.dueDate}
+                    orderStatus={order.orderStatus}
                   />
                 </TableCell>
               </TableRow>

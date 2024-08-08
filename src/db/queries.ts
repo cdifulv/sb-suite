@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { unstable_cache } from 'next/cache';
 import { db } from '@/db';
 
 export async function getOrder(orderId: number) {
@@ -9,14 +10,28 @@ export async function getOrder(orderId: number) {
   return order;
 }
 
-export async function getPendingOrders() {
-  const pendingOrders = await db.query.orders.findMany({
-    where: (model, { eq }) => eq(model.orderStatus, 'pending'),
-    orderBy: (model, { asc }) => asc(model.dueDate)
-  });
+export const getOrders = unstable_cache(
+  async function getOrders() {
+    return await db.query.orders.findMany();
+  },
+  ['orders'],
+  {
+    tags: ['orders']
+  }
+);
 
-  return pendingOrders;
-}
+export const getPendingOrders = unstable_cache(
+  async function getPendingOrders() {
+    return await db.query.orders.findMany({
+      where: (model, { eq }) => eq(model.orderStatus, 'pending'),
+      orderBy: (model, { asc }) => asc(model.dueDate)
+    });
+  },
+  ['pendingOrders'],
+  {
+    tags: ['pendingOrders']
+  }
+);
 
 export async function getOrderPaymentsBetweenDates(
   startDate: Date,
