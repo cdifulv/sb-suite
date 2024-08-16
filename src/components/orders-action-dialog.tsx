@@ -9,7 +9,6 @@ import { CalendarIcon, MoreVertical } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { type z } from 'zod';
 
-import { type UpdateOrderResponse } from '@/types/order';
 import { cn } from '@/lib/utils';
 import { dueDateFormSchema } from '@/lib/zodSchemas';
 import { Button } from '@/components/ui/button';
@@ -70,34 +69,23 @@ export function OrderActionDialog({
   async function onSubmit() {
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          dueDate: form.getValues('dueDate')
-        })
-      });
-
-      router.refresh();
-
-      const response = (await res.json()) as UpdateOrderResponse;
-
-      if (!res.ok) {
+      const response = await updateOrder(orderId, { ...form.getValues() });
+      if (response.status === 'success') {
+        router.refresh();
+        toast({
+          title: 'Due date has been updated',
+          description: 'The due date has been updated.'
+        });
+      } else {
         form.setError('dueDate', {
           type: 'manual',
-          message: response.errors?.dueDate ?? 'A validation error occurred.'
+          message: Array.isArray(response.errors?.dueDate)
+            ? response.errors?.dueDate[0]
+            : (response.errors?.dueDate ?? 'A validation error occurred.')
         });
         return;
       }
-
       onOpenChangeHandler(false);
-
-      toast({
-        title: 'Due date has been updated',
-        description: 'The due date has been updated.'
-      });
     } catch (error) {
       toast({
         title: 'An error occurred',

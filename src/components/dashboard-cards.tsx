@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { getOrderPaymentsBetweenDates, getPendingOrders } from '@/db/queries';
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import Stripe from 'stripe';
@@ -6,11 +5,10 @@ import Stripe from 'stripe';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
-import { SkeletonCard } from '@/components/skeleton-card';
 
 const now = new Date();
 const firstDayOfMonth = startOfMonth(now);
-const lastDatyOfMonth = endOfMonth(now);
+const lastDayOfMonth = endOfMonth(now);
 const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
 const endOfPreviousMonth = endOfMonth(subMonths(now, 1));
 
@@ -18,7 +16,7 @@ async function getGrossRevenue() {
   try {
     const currOrders = await getOrderPaymentsBetweenDates(
       firstDayOfMonth,
-      lastDatyOfMonth
+      lastDayOfMonth
     );
     const prevOrders = await getOrderPaymentsBetweenDates(
       startOfPreviousMonth,
@@ -53,7 +51,7 @@ async function getNewCustomers(stripe: Stripe) {
     const newCustomers = await stripe.customers.list({
       created: {
         gte: Math.floor(firstDayOfMonth.getTime() / 1000),
-        lte: Math.floor(lastDatyOfMonth.getTime() / 1000)
+        lte: Math.floor(lastDayOfMonth.getTime() / 1000)
       },
       limit: 100
     });
@@ -87,7 +85,7 @@ async function getNewInvoices(stripe: Stripe) {
     const invoices = await stripe.invoices.list({
       created: {
         gte: Math.floor(firstDayOfMonth.getTime() / 1000),
-        lte: Math.floor(lastDatyOfMonth.getTime() / 1000)
+        lte: Math.floor(lastDayOfMonth.getTime() / 1000)
       },
       limit: 100
     });
@@ -134,109 +132,104 @@ export async function DashboardCards() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-      <Suspense fallback={<SkeletonCard />}>
-        <Card x-chunk="dashboard-01-chunk-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium ">
-              <div className="flex flex-row items-center">
-                <span className="mr-1">Gross Revenue</span>
-                <Icons.dollarSign className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardTitle>
-
-            <Badge
-              className={
-                (grossRevenue.percentageChange ?? 0) > 0
-                  ? 'text-xs bg-lime-200 text-lime-950'
-                  : 'text-xs bg-yellow-200 text-yellow-950'
-              }
-              variant="outline"
-            >
-              {Math.round(grossRevenue.percentageChange) ?? 0}%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${grossRevenue.grossRevenue ?? 0}
+      <Card x-chunk="dashboard-01-chunk-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium ">
+            <div className="flex flex-row items-center">
+              <span className="mr-1">Gross Revenue</span>
+              <Icons.dollarSign className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground">
-              ${grossRevenue.prevGrossRevenue ?? 0} previous month
-            </p>
-          </CardContent>
-        </Card>
-      </Suspense>
-      <Suspense fallback={<SkeletonCard />}>
-        <Card x-chunk="dashboard-01-chunk-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              <div className="flex flex-row items-center">
-                <span className="mr-1">Customers</span>
-                <Icons.users className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardTitle>
-            <Badge
-              className={
-                (grossRevenue.percentageChange ?? 0) > 0
-                  ? 'text-xs bg-lime-200 text-lime-950'
-                  : 'text-xs bg-yellow-200 text-yellow-950'
-              }
-              variant="outline"
-            >
-              {Math.round(customers.percentageChange) ?? 0}%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{customers.newCustomers}</div>
-            <p className="text-xs text-muted-foreground">
-              {customers.prevCustomers} previous month
-            </p>
-          </CardContent>
-        </Card>
-      </Suspense>
-      <Suspense fallback={<SkeletonCard />}>
-        <Card x-chunk="dashboard-01-chunk-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {' '}
-              <div className="flex flex-row items-center">
-                <span className="mr-1">Orders</span>
-                <Icons.creditCard className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardTitle>
-            <Badge
-              className={
-                (grossRevenue.percentageChange ?? 0) > 0
-                  ? 'text-xs bg-lime-200 text-lime-950'
-                  : 'text-xs bg-yellow-200 text-yellow-950'
-              }
-              variant="outline"
-            >
-              {Math.round(invoices.percentageChange) ?? 0}%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{invoices.newInvoices}</div>
-            <p className="text-xs text-muted-foreground">
-              {invoices.prevInvoices} previous month
-            </p>
-          </CardContent>
-        </Card>
-      </Suspense>
-      <Suspense fallback={<SkeletonCard />}>
-        <Card x-chunk="dashboard-01-chunk-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              <div className="flex flex-row items-center">
-                <span className="mr-1">Pending Orders</span>
-                <Icons.activity className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingOrders.length}</div>
-          </CardContent>
-        </Card>
-      </Suspense>
+          </CardTitle>
+
+          <Badge
+            className={
+              (grossRevenue.percentageChange ?? 0) > 0
+                ? 'text-xs bg-lime-200 text-lime-950'
+                : 'text-xs bg-yellow-200 text-yellow-950'
+            }
+            variant="outline"
+          >
+            {Math.round(grossRevenue.percentageChange) ?? 0}%
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            ${grossRevenue.grossRevenue ?? 0}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            ${grossRevenue.prevGrossRevenue ?? 0} previous month
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card x-chunk="dashboard-01-chunk-1">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            <div className="flex flex-row items-center">
+              <span className="mr-1">Customers</span>
+              <Icons.users className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardTitle>
+          <Badge
+            className={
+              (grossRevenue.percentageChange ?? 0) > 0
+                ? 'text-xs bg-lime-200 text-lime-950'
+                : 'text-xs bg-yellow-200 text-yellow-950'
+            }
+            variant="outline"
+          >
+            {Math.round(customers.percentageChange) ?? 0}%
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">+{customers.newCustomers}</div>
+          <p className="text-xs text-muted-foreground">
+            {customers.prevCustomers} previous month
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card x-chunk="dashboard-01-chunk-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {' '}
+            <div className="flex flex-row items-center">
+              <span className="mr-1">Orders</span>
+              <Icons.creditCard className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardTitle>
+          <Badge
+            className={
+              (grossRevenue.percentageChange ?? 0) > 0
+                ? 'text-xs bg-lime-200 text-lime-950'
+                : 'text-xs bg-yellow-200 text-yellow-950'
+            }
+            variant="outline"
+          >
+            {Math.round(invoices.percentageChange) ?? 0}%
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">+{invoices.newInvoices}</div>
+          <p className="text-xs text-muted-foreground">
+            {invoices.prevInvoices} previous month
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card x-chunk="dashboard-01-chunk-3">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            <div className="flex flex-row items-center">
+              <span className="mr-1">Pending Orders</span>
+              <Icons.activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{pendingOrders.length}</div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

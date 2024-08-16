@@ -7,8 +7,8 @@ A simple program that allows you to keep track of your small business.
 - [x] Add Stripe integration for creating invoices / viewing analytics
 - [x] Add a database
 - [x] Dashboard UI
-- [ ] Add Orders Page
-- [ ] Add a Accounting page Page
+- [x] Add Orders Page
+- [x] Add a Accounting page
 - [ ] Expense tracking
 - [ ] Add Suspense loading skeletongs for components
 - [ ] File upload for receipts

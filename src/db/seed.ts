@@ -41,6 +41,9 @@ const main = async () => {
       const charge = validCharges.find(
         (charge) => charge.invoice === invoice.id
       );
+      const containsCookie = invoice.lines.data.some(
+        (line) => line.description?.match(/cookie/i) !== null
+      );
       ordersData.push({
         customerName: invoice.customer_name!,
         customerEmail: invoice.customer_email!,
@@ -50,7 +53,15 @@ const main = async () => {
           new Date(invoice.due_date! * 1000) < new Date()
             ? 'complete'
             : 'pending',
+        salesTax: invoice.tax ?? 0,
+        salesTaxRate: containsCookie
+          ? '7.35'
+          : invoice.default_tax_rates.length > 0 &&
+              invoice.default_tax_rates[0].effective_percentage
+            ? invoice.default_tax_rates[0].effective_percentage.toFixed(2)
+            : '6.35',
         total: invoice.total,
+        totalExcludingTax: invoice.total_excluding_tax ?? 0,
         paymentStatus: invoice.status!,
         paymentMethod:
           invoice.status === 'paid' && invoice.amount_remaining === 0

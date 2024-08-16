@@ -12,6 +12,10 @@ export const siteConfig = {
     {
       title: 'Orders',
       href: '/orders'
+    },
+    {
+      title: 'Financials',
+      href: '/financials'
     }
   ],
   links: {

@@ -1,13 +1,13 @@
 'use client';
 
+import { type CreateOrderResponse } from '@/db/actions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import CurrencyInput from 'react-currency-input-field';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { type z } from 'zod';
 
-import { UpdateOrderResponse } from '@/types/order';
 import { cn } from '@/lib/utils';
 import { createOrderFormSchema } from '@/lib/zodSchemas';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -39,7 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 interface AddOrderFormProps {
   onCreateOrder: (
     values: z.infer<typeof createOrderFormSchema>
-  ) => Promise<UpdateOrderResponse | undefined>;
+  ) => Promise<CreateOrderResponse | undefined>;
   submitting: boolean;
   initialValues?: z.infer<typeof createOrderFormSchema>;
 }
@@ -55,7 +54,8 @@ export function AddOrderForm({
       customerName: '',
       customerEmail: '',
       description: '',
-      total: '',
+      salesTaxRate: '6.35',
+      total: 0,
       dueDate: undefined,
       paymentDate: undefined,
       paymentStatus: '',
@@ -65,12 +65,13 @@ export function AddOrderForm({
 
   async function onSubmit(values: z.infer<typeof createOrderFormSchema>) {
     const response = await onCreateOrder(values);
-    if (response && response.errors) {
-      const errors = response.errors;
+    if (response?.errors) {
       Object.keys(response.errors).forEach((key) => {
         form.setError(key as keyof typeof form.formState.errors, {
           type: 'manual',
-          message: errors[key]
+          message: Array.isArray(response.errors?.[key])
+            ? response.errors?.[key][0]
+            : (response.errors?.[key] ?? 'A validation error occurred.')
         });
       });
     }
@@ -143,7 +144,7 @@ export function AddOrderForm({
                   prefix="$"
                   decimalsLimit={2}
                   disabled={submitting}
-                  onValueChange={(value, name, values) => {
+                  onValueChange={(value, _name, _values) => {
                     const total = value ?? '';
                     field.onChange(total);
                   }}

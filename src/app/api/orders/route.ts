@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as CreateOrder;
     const parsedBody = createOrderFormSchema.safeParse(body);
     if (!parsedBody.success) {
-      console.log(parsedBody.error.flatten().fieldErrors);
       return NextResponse.json(
         {
           message: 'Invalid form data',

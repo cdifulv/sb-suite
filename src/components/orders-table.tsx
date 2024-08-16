@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createOrder } from '@/db/actions';
 import {
   flexRender,
   getCoreRowModel,
@@ -16,10 +17,10 @@ import {
 } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { ArrowUpDown, ChevronDown } from 'lucide-react';
-import { z } from 'zod';
+import { type z } from 'zod';
 
-import { Order, UpdateOrderResponse } from '@/types/order';
-import { createOrderFormSchema } from '@/lib/zodSchemas';
+import { type Order } from '@/types/order';
+import { type createOrderFormSchema } from '@/lib/zodSchemas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -216,7 +217,6 @@ export function OrdersTable({ data }: { data: Order[] }) {
     id: false,
     stripeInvoiceId: false
   });
-  const [rowSelection, setRowSelection] = useState({});
 
   const table = useReactTable({
     data,
@@ -228,40 +228,26 @@ export function OrdersTable({ data }: { data: Order[] }) {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
-      columnVisibility,
-      rowSelection
+      columnVisibility
     }
   });
 
   async function handleAddOrder(values: z.infer<typeof createOrderFormSchema>) {
     setIsSubmitting(true);
+
     try {
-      const res = await fetch(`/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(values),
-        next: { tags: ['orders', 'pendingOrders'] }
-      });
-
-      const response = (await res.json()) as UpdateOrderResponse;
-      router.refresh();
-
-      if (!res.ok) {
-        return response;
+      const response = await createOrder(values);
+      if (response.status === 'success') {
+        router.refresh();
+        setIsOpen(false);
+        toast({
+          title: 'Order created successfully',
+          description: 'A manual order has been created.'
+        });
       }
-
-      setIsOpen(false);
-
-      toast({
-        title: 'Order created successfully',
-        description: 'A manual order has been created.'
-      });
       return response;
     } catch (error) {
       toast({
