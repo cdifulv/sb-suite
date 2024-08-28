@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getMonthlyFinancials } from '@/db/queries';
-import { format, parseISO, startOfMonth } from 'date-fns';
 import {
   Banknote,
   CreditCard,
@@ -13,7 +12,6 @@ import {
   Wallet
 } from 'lucide-react';
 
-import { type Order } from '@/types/order';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -24,73 +22,42 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export function FinanceCards({ orders }: { orders: Order[] }) {
-  const [loading, setLoading] = useState(true);
-  const [month, setMonth] = useState(startOfMonth(new Date()));
-  const [uniqueMonths, setUniqueMonths] = useState<
-    { value: Date; label: string }[]
-  >([]);
-  const [financials, setFinancials] = useState<{
-    grossRevenue: number;
-    stripeSales: number;
-    cashSales: number;
-    generalSalesGrossRevenue: number;
-    mealSalesGrossRevenue: number;
-    generalSalesTax: number;
-    mealsSalesTax: number;
-    taxes: number;
-    salesTax: number;
-    grossPayout: number;
-    netPayout: number;
-    reinvest: number;
-  } | null>(null);
+type Financials = {
+  grossRevenue: number;
+  stripeSales: number;
+  cashSales: number;
+  generalSalesGrossRevenue: number;
+  mealSalesGrossRevenue: number;
+  generalSalesTax: number;
+  mealsSalesTax: number;
+  taxes: number;
+  salesTax: number;
+  grossPayout: number;
+  netPayout: number;
+  reinvest: number;
+};
+interface FinanceCardsProps {
+  financeData: Financials;
+  uniqueMonths: { value: Date; label: string }[];
+  currentMonth: Date;
+}
 
-  useEffect(() => {
-    const paidOrders = orders.filter((order) => order.paymentDate);
-    const uniqueMonths: { value: Date; label: string }[] = paidOrders.reduce(
-      (acc: { value: Date; label: string }[], order) => {
-        if (order.dueDate) {
-          const value = startOfMonth(order.dueDate);
-          const label = format(
-            parseISO(order.dueDate.toISOString()),
-            'MMM yyyy'
-          );
-          const key = value.toISOString();
-
-          if (!acc.some((item) => item.value.toISOString() === key)) {
-            acc.push({ value, label });
-          }
-        }
-        return acc;
-      },
-      []
-    );
-    uniqueMonths.sort((a, b) => b.value.getTime() - a.value.getTime());
-    setUniqueMonths(uniqueMonths);
-  }, [month, orders]);
-
-  useEffect(() => {
-    const getFinancials = async (date: Date) => {
-      return await getMonthlyFinancials(date);
-    };
-    setLoading(true);
-    getFinancials(month)
-      .then((data) => {
-        setFinancials(data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }, [month]);
+export function FinanceCards({
+  financeData,
+  uniqueMonths,
+  currentMonth
+}: FinanceCardsProps) {
+  const [month, setMonth] = useState(currentMonth);
+  const [financials, setFinancials] = useState<Financials | null>(financeData);
 
   async function handleMonthChange(date: string) {
-    setMonth(new Date(date));
+    const newDate = new Date(date);
+    setMonth(newDate);
+    const financials = await getMonthlyFinancials(newDate);
+    setFinancials(financials);
   }
 
-  return orders.length > 0 &&
-    (financials === null || uniqueMonths.length === 0) ? (
-    <div>Loading...</div>
-  ) : (
+  return (
     <div className="md:w-full">
       <Select value={month.toISOString()} onValueChange={handleMonthChange}>
         <SelectTrigger className="w-full ">

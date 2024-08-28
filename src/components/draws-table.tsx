@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { createDraw, deleteDraw } from '@/db/actions';
 import {
   flexRender,
@@ -18,8 +17,8 @@ import { format } from 'date-fns';
 import { ArrowUpDown, PlusCircle, Trash } from 'lucide-react';
 import { type z } from 'zod';
 
-import { Draw } from '@/types/draw';
-import { createDrawFormSchema } from '@/lib/zodSchemas';
+import { type Draw } from '@/types/draw';
+import { type createDrawFormSchema } from '@/lib/zodSchemas';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -38,13 +37,6 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
   Table,
   TableBody,
   TableCell,
@@ -54,7 +46,6 @@ import {
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/use-toast';
 import { AddDrawForm } from '@/components/add-draw-form';
-import { OrderActionDialog } from '@/components/orders-action-dialog';
 
 export const columns: ColumnDef<Draw>[] = [
   {
@@ -118,16 +109,12 @@ export const columns: ColumnDef<Draw>[] = [
 ];
 
 export function DrawsTable({ data }: { data: Draw[] }) {
-  const router = useRouter();
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     id: false
   });
-
-  //Todo add fetch for draws from expenses table
 
   const table = useReactTable({
     data,

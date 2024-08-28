@@ -16,6 +16,10 @@ export const siteConfig = {
     {
       title: 'Financials',
       href: '/financials'
+    },
+    {
+      title: 'Expenses',
+      href: '/expenses'
     }
   ],
   links: {
