@@ -130,22 +130,23 @@ export function OrderActionDialog({
               </DropdownMenuItem>
             </button>
           </form>
-          {!stripeInvoiceId && orderStatus !== 'complete' && (
-            <>
-              <DropdownMenuSeparator />
-              <form
-                action={async () => {
-                  await deleteOrder(orderId);
-                }}
-              >
-                <button type="submit" className="block w-full">
-                  <DropdownMenuItem className="w-full">
-                    Delete Order
-                  </DropdownMenuItem>
-                </button>
-              </form>
-            </>
-          )}
+          {!stripeInvoiceId ||
+            (orderStatus !== 'complete' && (
+              <>
+                <DropdownMenuSeparator />
+                <form
+                  action={async () => {
+                    await deleteOrder(orderId);
+                  }}
+                >
+                  <button type="submit" className="block w-full">
+                    <DropdownMenuItem className="w-full">
+                      Delete Order
+                    </DropdownMenuItem>
+                  </button>
+                </form>
+              </>
+            ))}
         </DropdownMenuContent>
       </DropdownMenu>
       <DialogContent>

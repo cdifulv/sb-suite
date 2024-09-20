@@ -138,15 +138,15 @@ export function DrawsTable({ data }: { data: Draw[] }) {
       if (response.status === 'success') {
         setIsOpen(false);
         toast({
-          title: 'Order created successfully',
-          description: 'A manual order has been created.'
+          title: 'Draw created successfully',
+          description: 'A draw has been created.'
         });
       }
       return response;
     } catch (error) {
       toast({
         title: 'An error occurred',
-        description: 'An error occurred while creating the order.'
+        description: 'An error occurred while creating the draw.'
       });
     } finally {
       setIsSubmitting(false);

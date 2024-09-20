@@ -83,11 +83,13 @@ export async function getMonthlyFinancials(date: Date) {
     0
   );
   const generalSalesGrossRevenue = orders.reduce(
-    (acc, order) => (order.salesTaxRate === '6.35' ? acc + order.total : acc),
+    (acc, order) =>
+      order.salesTaxRate === '6.35' ? acc + order.totalExcludingTax : acc,
     0
   );
   const mealSalesGrossRevenue = orders.reduce(
-    (acc, order) => (order.salesTaxRate === '7.35' ? acc + order.total : acc),
+    (acc, order) =>
+      order.salesTaxRate === '7.35' ? acc + order.totalExcludingTax : acc,
     0
   );
   const generalSalesTax = orders.reduce(
@@ -140,5 +142,17 @@ export const getDraws = unstable_cache(
   ['draws'],
   {
     tags: ['draws']
+  }
+);
+
+export const getExpenses = unstable_cache(
+  async function getExpenses() {
+    return await db.query.expenses.findMany({
+      orderBy: (model, { desc }) => desc(model.date)
+    });
+  },
+  ['expenses'],
+  {
+    tags: ['expenses']
   }
 );

@@ -29,3 +29,9 @@ export const createDrawFormSchema = z.object({
   amount: z.string().min(1, 'Total is required.'),
   date: z.coerce.date()
 });
+
+export const createExpenseFormSchema = z.object({
+  amount: z.string().min(1, 'Total is required.'),
+  description: z.string(),
+  date: z.coerce.date()
+});

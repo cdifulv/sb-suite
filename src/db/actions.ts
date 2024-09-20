@@ -6,16 +6,18 @@ import { revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 
-import { CreateDraw } from '@/types/draw';
+import { type CreateDraw } from '@/types/draw';
+import { type CreateExpense } from '@/types/expense';
 import { type CreateOrder, type UpdateOrder } from '@/types/order';
 import {
   createDrawFormSchema,
+  createExpenseFormSchema,
   createOrderFormSchema,
   updateOrderSchema
 } from '@/lib/zodSchemas';
 
 import { getOrder } from './queries';
-import { draws, orders } from './schema';
+import { draws, expenses, orders } from './schema';
 
 export type UpdateOrderResponse = {
   status: 'success' | 'error';
@@ -182,4 +184,65 @@ export async function deleteDraw(drawId: number) {
 
   await db.update(draws).set({ deleted: true }).where(eq(draws.id, drawId));
   revalidateTag('draws');
+}
+
+export type CreateExpenseResponse = {
+  status: 'success' | 'error';
+  message: string;
+  errors?: Record<string, string[]>;
+};
+export async function createExpense(
+  rawData: CreateExpense
+): Promise<CreateExpenseResponse> {
+  const parsed = createExpenseFormSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      status: 'error',
+      message: 'Invalid form data',
+      errors: parsed.error.flatten().fieldErrors
+    };
+  }
+
+  const values = {
+    amount: parseFloat(parsed.data.amount) * 100,
+    description: parsed.data.description,
+    date: new Date(parsed.data.date)
+  };
+
+  try {
+    await db.insert(expenses).values(values);
+    revalidateTag('expenses');
+  } catch (e) {
+    console.error(e);
+    throw new Error('Failed to create expense');
+  }
+
+  return {
+    status: 'success',
+    message: 'Expense created successfully'
+  };
+}
+
+export async function deleteExpense(expenseId: number) {
+  const expense = await db.query.expenses.findFirst({
+    where: (model, { eq }) => eq(model.id, expenseId)
+  });
+
+  if (!expense) {
+    throw new Error('Expense not found');
+  }
+
+  await db.delete(expenses).where(eq(expenses.id, expenseId));
+  revalidateTag('expenses');
+}
+
+export async function importExpenses(data: CreateExpense[]) {
+  const values = data.map((row) => ({
+    amount: parseFloat(row.amount),
+    description: row.description,
+    date: new Date(row.date)
+  }));
+
+  await db.insert(expenses).values(values);
+  revalidateTag('expenses');
 }

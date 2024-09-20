@@ -1,5 +1,5 @@
 import { getDraws, getMonthlyFinancials, getOrders } from '@/db/queries';
-import { format, parseISO, startOfMonth } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 
 import { DrawsTable } from '@/components/draws-table';
 import { FinanceCards } from '@/components/finance-cards';
@@ -14,8 +14,9 @@ export default async function FinancialsPage() {
     .filter((order) => order.paymentDate)
     .reduce((acc: { value: Date; label: string }[], order) => {
       if (order.dueDate) {
-        const value = startOfMonth(order.dueDate);
-        const label = format(parseISO(order.dueDate.toISOString()), 'MMM yyyy');
+        const dueDate = new Date(order.dueDate);
+        const value = startOfMonth(dueDate);
+        const label = format(value, 'MMM yyyy');
         const key = value.toISOString();
 
         if (!acc.some((item) => item.value.toISOString() === key)) {

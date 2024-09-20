@@ -72,7 +72,7 @@ const main = async () => {
         paymentDate: charge
           ? new Date(charge.created * 1000)
           : invoice.status === 'paid' && invoice.amount_due > 0
-            ? new Date(invoice.due_date! * 1000)
+            ? new Date(invoice.status_transitions.paid_at! * 1000)
             : null,
         stripeInvoiceId: invoice.id
       });

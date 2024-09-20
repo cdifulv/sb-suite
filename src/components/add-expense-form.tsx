@@ -1,6 +1,6 @@
 'use client';
 
-import { type CreateDrawResponse } from '@/db/actions';
+import { type CreateExpenseResponse } from '@/db/actions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { type z } from 'zod';
 
 import { cn } from '@/lib/utils';
-import { createDrawFormSchema } from '@/lib/zodSchemas';
+import { createExpenseFormSchema } from '@/lib/zodSchemas';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -26,21 +26,23 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover';
 
-interface AddDrawFormProps {
-  onCreateDraw: (
-    values: z.infer<typeof createDrawFormSchema>
-  ) => Promise<CreateDrawResponse | undefined>;
+import { Textarea } from './ui/textarea';
+
+interface AddExpenseFormProps {
+  onCreateExpense: (
+    values: z.infer<typeof createExpenseFormSchema>
+  ) => Promise<CreateExpenseResponse | undefined>;
   submitting: boolean;
-  initialValues?: z.infer<typeof createDrawFormSchema>;
+  initialValues?: z.infer<typeof createExpenseFormSchema>;
 }
 
-export function AddDrawForm({
-  onCreateDraw,
+export function AddExpenseForm({
+  onCreateExpense,
   submitting,
   initialValues
-}: AddDrawFormProps) {
-  const form = useForm<z.infer<typeof createDrawFormSchema>>({
-    resolver: zodResolver(createDrawFormSchema),
+}: AddExpenseFormProps) {
+  const form = useForm<z.infer<typeof createExpenseFormSchema>>({
+    resolver: zodResolver(createExpenseFormSchema),
     defaultValues: {
       amount: '',
       date: undefined,
@@ -48,8 +50,8 @@ export function AddDrawForm({
     }
   });
 
-  async function onSubmit(values: z.infer<typeof createDrawFormSchema>) {
-    const response = await onCreateDraw(values);
+  async function onSubmit(values: z.infer<typeof createExpenseFormSchema>) {
+    const response = await onCreateExpense(values);
     if (response?.errors) {
       Object.keys(response.errors).forEach((key) => {
         form.setError(key as keyof typeof form.formState.errors, {
@@ -65,7 +67,7 @@ export function AddDrawForm({
   return (
     <Form {...form}>
       <form
-        id="AddDrawForm"
+        id="AddExpenseForm"
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-2"
       >
@@ -74,7 +76,7 @@ export function AddDrawForm({
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Total</FormLabel>
+              <FormLabel>Amount</FormLabel>
               <FormControl>
                 <CurrencyInput
                   onBlur={field.onBlur}
@@ -93,6 +95,19 @@ export function AddDrawForm({
                     field.onChange(total);
                   }}
                 />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} disabled={submitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
